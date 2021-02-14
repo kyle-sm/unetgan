@@ -48,6 +48,46 @@ def main():
 
     train(train_ds, generator, discriminator)
 
+    gen_builder = tf.saved_model.builder.SavedModelBuilder("gen_export")
+    gen_inputs = {
+        'input': tf.saved_model.utils.build_tensor_info(generator.input)
+    }
+    gen_outputs = {
+        'image': tf.saved_model.utils.build_tensor_info(generator.output)
+    }
+    gen_sig = tf.saved_model.signature_def_utils.build_signature_def(
+        inputs=gen_inputs,
+        outputs=gen_outputs,
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME)
+    gen_builder.add_meta_graph_variables(
+        tf.keras.backend.get_session(),
+        tags=[tf.saved_model.tag_constants.SERVING],
+        signature_def_map={
+            tf.saved_model.tag_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+            gen_sig
+        })
+    gen_builder.save()
+
+    disc_builder = tf.saved_model.builder.SavedModelBuilder("disc_export")
+    disc_inputs = {
+        'input': tf.saved_model.utils.build_tensor_info(discriminator.input)
+    }
+    disc_outputs = {
+        'image': tf.saved_model.utils.build_tensor_info(discriminator.output)
+    }
+    disc_sig = tf.saved_model.signature_def_utils.build_signature_def(
+        inputs=disc_inputs,
+        outputs=disc_outputs,
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME)
+    disc_builder.add_meta_graph_variables(
+        tf.keras.backend.get_session(),
+        tags=[tf.saved_model.tag_constants.SERVING],
+        signature_def_map={
+            tf.saved_model.tag_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+            disc_sig
+        })
+    disc_builder.save()
+
 
 @tf.function
 def train_step(image_batch, generator, discriminator):
